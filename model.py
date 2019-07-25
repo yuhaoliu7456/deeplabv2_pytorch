@@ -15,7 +15,6 @@ class _ASPP(nn.Module):
             nn.init.constant_(m.bias.data, 0)
     
     def forward(self, x):
-        # print(list(self.children())[0](x) == list(self.children())[1](x))  #判断x从不同扩张率的卷积出来的结果是否一样
         sum_output = sum([stage(x) for stage in self.children()])
         return sum_output
 
@@ -27,13 +26,13 @@ class Deeplabv2(nn.Sequential):
         
         self.add_module("layer1", _layer1(channels[0]))
         self.add_module("layer2", _ResLayer(num_blocks[0], channels[0], channels[2], 1, 1))
-        self.add_module("layer3", _ResLayer(num_blocks[1], channels[2], channels[3], 2, 1))   # the reslayer'input dim must be carefully, i made a mistake here
+        self.add_module("layer3", _ResLayer(num_blocks[1], channels[2], channels[3], 2, 1))   
         self.add_module("layer4", _ResLayer(num_blocks[2], channels[3], channels[4], 1, 2))
         self.add_module("layer5", _ResLayer(num_blocks[3], channels[4], channels[5], 1, 4))
         self.add_module("ASPP", _ASPP(channels[5], num_classes, atrous_rates))
     
     def freeze_bn(self):
-        # 把在coco上pretrained的model的conv中的BN给设成eval()模式以不让它训练
+        # Set the BN in the conv of the pretrained model on coco to eval() mode to prevent it from training.
         for i in self.modules():
             if isinstance(i, _Conv_Bn_Relu.BATCH_NORM):
                 i.eval() 
@@ -63,14 +62,18 @@ class Model(nn.Module):
             return [logits] + logits_pyramid + [logits_max]
         else:
             return logits_max
-         
+ 
+def _init_weight(m):
+    if isinstance(m, nn.Conv2d):
+        nn.init.xavier_uniform_(m.weight.data)
+        if m.bias is not None:
+            nn.init.constant_(m.bias, 0)
+    elif isinstance(m, nn.BatchNorm2d):
+        nn.init.constant_(m.weight, 1)
+        nn.init.constant_(m.bias, 0)
+    elif isinstance(m, nn.Linear):
+        nn.init.xavier_normal_(m.weight)
+        nn.init.constant_(m.bias, 0)
 
 
-if __name__ == "__main__":
-    rate = list((6, 12, 18, 24))
-    model = Model(base=Deeplabv2(num_classes=21, num_blocks=[3, 4, 23, 3], atrous_rates=rate), scales=(0.5, 0.75))
-    model.eval()
-    x = torch.randn(1, 3, 30, 30)
-    result = model(x)
-    print(result)
 

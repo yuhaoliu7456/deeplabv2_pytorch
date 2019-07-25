@@ -16,8 +16,8 @@ class Voc12(data.Dataset):
         self.crop_size = crop_size
         self.base_size = base_size
         self.augment = augment
-        self.mean_bgr = np.array(mean_bgr)         #用于给image填充padding
-        self.ignore_label = ignore_label #用于给label填充padding，ignore_label是忽略掉不计算loss的label，所以可以用它
+        self.mean_bgr = np.array(mean_bgr)         # Used to pad padding for image
+        self.ignore_label = ignore_label # Used to pad padding for label, ignore_label is to ignore the label without calculating loss
         self.split = split
         self.root = os.path.join(root, "VOC%d" %self.year)
 
@@ -26,6 +26,7 @@ class Voc12(data.Dataset):
 
         if self.split in ["train", "trainval", "val", "test"]:
             file_list = os.path.join(self.root, "ImageSets/Segmentation/%s.txt" %self.split)
+            print('--file_list---', file_list)
             file_list = tuple(open(file_list, "r"))
             file_list = [i.rstrip() for i in file_list]
             self.files = file_list
@@ -45,7 +46,7 @@ class Voc12(data.Dataset):
         label = np.asarray(Image.open(label_path), dtype=np.int32)
         if self.augment:
             image, label = self._augment(image, label)
-        image -= self.mean_bgr
+        image -= self.mean_bgr             # 干啥用了？？？
         image = image.transpose(2, 0, 1)
         return image_id, image.astype(np.float32), label.astype(np.int64)
 
@@ -88,15 +89,10 @@ class Voc12(data.Dataset):
                 label = np.fliplr(label).copy()
         return image, label
 
-def voc_loader():
-    dataset = Voc12(root="/home/iccd/桌面/TX/PRM-pytorch/demo/datasets/VOCdevkit", split='train', ignore_label=255, mean_bgr=(122.675, 116.669, 104.008), augment=True,
-        base_size=None, crop_size=321, scales=[0.5, 0.75, 1.0, 1.25, 1.5], flip=True)
-    data_loader = data.DataLoader(dataset=dataset, batch_size=1, shuffle=True, num_workers=0, pin_memory=True)
+def voc_loader(root, split, ignore_label, mean_bgr, augment, base_size, crop_size, scales, flip, args):
+    dataset = Voc12(root, split, ignore_label, mean_bgr, augment, base_size, crop_size, scales, flip)
+    data_loader = data.DataLoader(dataset=dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.batch_size, pin_memory=True)
     return data_loader
 
 
 
-if __name__ == "__main__":
-    loader = voc_loader()
-    print(len(loader))
-    
