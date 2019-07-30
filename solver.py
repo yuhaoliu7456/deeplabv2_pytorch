@@ -112,7 +112,7 @@ class Solver(object):
                 if (i + 1) > max_iter: break
                 current_iteration += 1       
                 global_counter += 1               # for calculate loss
-                self.adjust_lr(current_iteration, max_iter)
+                self.adjust_lr(global_counter, max_iter)
                 images = images.to(self.device)
                 self.optimizer.zero_grad()
                 logits = self.net(images)
