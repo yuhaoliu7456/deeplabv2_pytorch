@@ -102,7 +102,7 @@ class Solver(object):
         else:
             best_val = None
         global_counter = self.args.global_counter
-        max_iter = int(self.args.epochs * len(self.train_loader) / self.args.batch_size)
+        max_iter = int(self.args.epochs * len(self.train_loader))
 
         for epoch in range(self.current_epoch, self.args.epochs):
             epoch = self.current_epoch
