@@ -151,4 +151,27 @@ class Solver(object):
         pass
 
     def test(self):
-        pass
+        global_counter = self.args.global_counter
+        with torch.no_grad():
+            for i, (_, images, labels, img_path) in enumerate(self.test_loader):
+            
+                images = images.to(self.device)
+                logits = self.net(images)
+                for idx in range(self.args.batch_size):
+                    img_name = img_path[idx].split('/')[-1].split('.')[0]
+                    output_predictions = logits[idx].argmax(0)
+                
+                    palette = torch.tensor([2 ** 25 - 1, 2 ** 15 - 1, 2 ** 21 - 1])
+                    colors = torch.as_tensor([i for i in range(21)])[:, None] * palette
+                    colors = (colors % 255).numpy().astype("uint8")
+                    output_predictions =  output_predictions.cpu().numpy()
+                    r = Image.fromarray(np.uint8(output_predictions))  # I don't know the reason that it need to convert to uin8 here.
+                    r = r.resize((321, 321))
+                    
+                    
+                    r.putpalette(colors)
+                    r.save(os.path.join('./save_bins', img_name + '.png'))
+                    # prob_final = prob_final * 255
+                    
+                    global_counter += 1
+                    print('Has finished %d images' %global_counter)
